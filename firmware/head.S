@@ -12,12 +12,7 @@
 	.align 3
 	.globl _start
 _start:
-#ifdef __riscv_c
 	j	_start_real
-	nop
-#else
-	j	_start_real
-#endif
 _zstage_header_magic:
 	.word		ZSTAGE_IMAGE_MAGIC
 _zstage_header_version:
@@ -39,6 +34,13 @@ _zstage_header_next_size:
 _zstage_header_reserved2:
 	.dword		0, 0, 0, 0, 0, 0, 0, 0
 
+	/* Secondary CPU spin address at ZSTAGE_TEXT_START + 4KB */
+	.align 12
+_zstage_spin_addr:
+	RISCV_PTR	0
+
+	/* Real start at ZSTAGE_TEXT_START + 4KB + 8 */
+	.align 3
 _start_real:
 	/* Disable and clear all interrupts */
 	csrw	CSR_MIE, zero
@@ -58,7 +60,7 @@ _start_real:
 	la	t0, _zstage_relocate_lottery
 	li	t1, 1
 	amoadd.w t0, t1, (t0)
-	bnez	t0, _wait_for_zstage_done
+	bnez	t0, _secondary_spin_loop
 
 	/* Save boot arg1 */
 	la	t0, _zstage_boot_arg1
@@ -80,18 +82,18 @@ _bss_zero:
 	la	a1, _start
 	call	zstage_main
 
-	/* set zStage done flag */
-	li	t1, 1
-	la	t0, _zstage_done
-	REG_S	t1, (t0)
+	/* Jump to next booting stage */
+	csrr	a0, CSR_MHARTID
+	la	t0, _zstage_header_next_fdt_addr
+	REG_L	a1, (t0)
+	la	t0, _zstage_header_next_run_addr
+	REG_L	t0, (t0)
+	jalr	t0
 
-	/* Continue with next booting stage */
-	j	_next_booting_stage
-
-	/* Wait for zStage done loop */
-_wait_for_zstage_done:
-	la	t0, _zstage_done
-_wait_for_zstage_again:
+	/* Wait for zStage spin address to become non-zero */
+_secondary_spin_loop:
+	la	t0, _zstage_spin_addr
+_secondary_spin_loop_again:
 	/* Reage zStage done flag */
 	REG_L	t1, (t0)
 	/* Few NOPs */
@@ -100,16 +102,12 @@ _wait_for_zstage_again:
 	add	zero, zero, zero
 	add	zero, zero, zero
 	/* Check zStage done flag */
-	beq	t1, zero, _wait_for_zstage_again
-
-	/* Jump to next booting stage */
-_next_booting_stage:
+	beq	t1, zero, _secondary_spin_loop_again
+	/* Jump to next location */
 	csrr	a0, CSR_MHARTID
 	la	t0, _zstage_header_next_fdt_addr
 	REG_L	a1, (t0)
-	la	t0, _zstage_header_next_run_addr
-	REG_L	t0, (t0)
-	jalr	t0
+	jalr	t1
 
 	.section .entry, "ax", %progbits
 	.align 3
@@ -123,8 +121,6 @@ _start_hang:
 _zstage_relocate_lottery:
 	RISCV_PTR	0
 _zstage_boot_arg1:
-	RISCV_PTR	0
-_zstage_done:
 	RISCV_PTR	0
 _zstage_stack_top:
 	RISCV_PTR	_stack_top

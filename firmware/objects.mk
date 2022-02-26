@@ -38,6 +38,10 @@ ifdef ZSTAGE_PAYLOAD_PATH
 firmware-genflags-y += -DZSTAGE_PAYLOAD_PATH=\"$(ZSTAGE_PAYLOAD_PATH)\"
 endif
 
+ifdef ZSTAGE_NO_SPIN
+firmware-genflags-y += -DZSTAGE_NO_SPIN=1
+endif
+
 firmware-objs-y += head.o
 firmware-objs-y += main.o
 firmware-objs-y += string.o

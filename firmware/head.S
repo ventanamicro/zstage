@@ -8,6 +8,17 @@
 #include <zstage/riscv_asm.h>
 #include <zstage/riscv_encoding.h>
 
+/*
+ * If __start_reg <= __check_reg and __check_reg < __end_reg then
+ *   jump to __pass
+ */
+.macro BRANGE __start_reg, __end_reg, __check_reg, __jump_lable
+	blt	\__check_reg, \__start_reg, 999f
+	bge	\__check_reg, \__end_reg, 999f
+	j	\__jump_lable
+999:
+.endm
+
 	.section .entry, "ax", %progbits
 	.align 3
 	.globl _start
@@ -50,25 +61,110 @@ _start_real:
 	la	t0, _start_hang
 	csrw	CSR_MTVEC, t0
 
-	/* Ensure that we are booted from right address */
-	la	t0, _start
-	la	t1, _zstage_header_image_run_addr
-	REG_L	t1, (t1)
-	bne	t0, t1, _start_hang
-
 	/* Jump to relocation wait loop if we don't get relocation lottery */
 	la	t0, _zstage_relocate_lottery
 	li	t1, 1
 	amoadd.w t0, t1, (t0)
-	bnez	t0, _secondary_spin_loop
+	bnez	t0, _wait_relocate_copy_done
+
+	/* Save load address */
+	la	t0, _zstage_load_start
+	la	t1, _start
+	REG_S	t1, 0(t0)
+
+	/* Relocate if load address != link address */
+_relocate:
+	la	t0, _zstage_header_image_run_addr
+	REG_L	t0, 0(t0)
+	la	t1, _zstage_header_image_size
+	REG_L	t1, 0(t1)
+	la	t2, _zstage_load_start
+	REG_L	t2, 0(t2)
+	add	t3, t2, t1
+	add	t1, t1, t0
+	beq	t0, t2, _relocate_done
+	la	t4, _relocate_done
+	sub	t4, t4, t2
+	add	t4, t4, t0
+	blt	t2, t0, _relocate_copy_to_upper
+_relocate_copy_to_lower:
+	ble	t1, t2, _relocate_copy_to_lower_loop
+	la	t3, _zstage_relocate_lottery
+	BRANGE	t2, t1, t3, _start_hang
+	la	t3, _zstage_boot_status
+	BRANGE	t2, t1, t3, _start_hang
+	la	t3, _relocate
+	la	t5, _relocate_done
+	BRANGE	t2, t1, t3, _start_hang
+	BRANGE	t2, t1, t5, _start_hang
+	BRANGE  t3, t5, t2, _start_hang
+_relocate_copy_to_lower_loop:
+	REG_L	t3, 0(t2)
+	REG_S	t3, 0(t0)
+	add	t0, t0, __SIZEOF_POINTER__
+	add	t2, t2, __SIZEOF_POINTER__
+	blt	t0, t1, _relocate_copy_to_lower_loop
+	jr	t4
+_relocate_copy_to_upper:
+	ble	t3, t0, _relocate_copy_to_upper_loop
+	la	t2, _zstage_relocate_lottery
+	BRANGE	t0, t3, t2, _start_hang
+	la	t2, _zstage_boot_status
+	BRANGE	t0, t3, t2, _start_hang
+	la	t2, _relocate
+	la	t5, _relocate_done
+	BRANGE	t0, t3, t2, _start_hang
+	BRANGE	t0, t3, t5, _start_hang
+	BRANGE	t2, t5, t0, _start_hang
+_relocate_copy_to_upper_loop:
+	add	t3, t3, -__SIZEOF_POINTER__
+	add	t1, t1, -__SIZEOF_POINTER__
+	REG_L	t2, 0(t3)
+	REG_S	t2, 0(t1)
+	blt	t0, t1, _relocate_copy_to_upper_loop
+	jr	t4
+_wait_relocate_copy_done:
+	la	t0, _start
+	la	t1, _zstage_header_image_run_addr
+	REG_L	t1, 0(t1)
+	beq	t0, t1, _secondary_spin_loop
+	la	t2, _zstage_boot_status
+	la	t3, _secondary_spin_loop
+	sub	t3, t3, t0
+	add	t3, t3, t1
+1:	/* Waiting for relocate copy done (_zstage_boot_status == 1) */
+	li	t4, 1
+	REG_L	t5, 0(t2)
+	/* Reduce the bus traffic so that boot hart may proceed faster */
+	nop
+	nop
+	nop
+	bgt	t4, t5, 1b
+	jr	t3
+_relocate_done:
+
+	/*
+	 * Mark relocate copy done
+	 * Use _zstage_boot_status copy relative to the load address
+	 */
+	la	t0, _zstage_boot_status
+	la	t1, _zstage_header_image_run_addr
+	REG_L	t1, 0(t1)
+	la	t2, _zstage_load_start
+	REG_L	t2, 0(t2)
+	sub	t0, t0, t1
+	add	t0, t0, t2
+	li	t1, 1
+	REG_S	t1, 0(t0)
+	fence	rw, rw
 
 	/* Save boot arg1 */
 	la	t0, _zstage_boot_arg1
 	REG_S	a1, (t0)
 
 	/* Zero-out BSS section */
-	lla	t1, _bss_start
-	lla	t2, _bss_end
+	la	t1, _bss_start
+	la	t2, _bss_end
 _bss_zero:
 	REG_S	zero, (t1)
 	add	t1, t1, __SIZEOF_POINTER__
@@ -81,6 +177,15 @@ _bss_zero:
 	REG_L	a0, (a0)
 	la	a1, _start
 	call	zstage_main
+
+#ifdef ZSTAGE_NO_SPIN
+	/* Make all secondary CPUs jump to next booting stage */
+	la	t0, _zstage_spin_addr
+	la	t1, _zstage_header_next_run_addr
+	REG_L	t1, (t1)
+	REG_S	t1, (t0)
+	fence	rw, rw
+#endif
 
 	/* Jump to next booting stage */
 	csrr	a0, CSR_MHARTID
@@ -120,7 +225,11 @@ _start_hang:
 	.align 3
 _zstage_relocate_lottery:
 	RISCV_PTR	0
+_zstage_load_start:
+	RISCV_PTR	0
 _zstage_boot_arg1:
+	RISCV_PTR	0
+_zstage_boot_status:
 	RISCV_PTR	0
 _zstage_stack_top:
 	RISCV_PTR	_stack_top

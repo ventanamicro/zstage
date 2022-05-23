@@ -86,6 +86,9 @@ _start_real:
 	la	t0, _start_hang
 	csrw	CSR_MTVEC, t0
 
+	/* Platform specific HART initialization */
+	call	_zstate_platform_hart_init
+
 	/* Jump to relocation wait loop if we don't get relocation lottery */
 	la	t0, _zstage_relocate_lottery
 	li	t1, 1
@@ -245,6 +248,12 @@ _secondary_spin_loop_again:
 _start_hang:
 	wfi
 	j	_start_hang
+
+	.section .entry, "ax", %progbits
+	.align 3
+	.weak _zstate_platform_hart_init
+_zstate_platform_hart_init:
+	ret
 
 	.data
 	.align 3

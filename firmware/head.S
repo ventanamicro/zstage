@@ -40,6 +40,17 @@ _zstage_header_image_nmivect_addr:
 	.dword		_zstage_nmivect
 _zstage_header_image_nmivect_size:
 	.dword		(_zstage_nmivect_end - _zstage_nmivect)
+#ifdef ZSTAGE_PLATDATA_SIZE
+_zstage_header_image_platdata_addr:
+	.dword		_zstage_platdata
+_zstage_header_image_platdata_size:
+	.dword		(_zstage_platdata_end - _zstage_platdata)
+#else
+_zstage_header_image_platdata_addr:
+	.dword		0
+_zstage_header_image_platdata_size:
+	.dword		0
+#endif
 _zstage_header_next_load_addr:
 	.dword		_zstage_payload_bin
 _zstage_header_next_run_addr:
@@ -49,7 +60,7 @@ _zstage_header_next_fdt_addr:
 _zstage_header_next_size:
 	.dword		(_zstage_payload_bin_end - _zstage_payload_bin)
 _zstage_header_reserved2:
-	.dword		0, 0, 0, 0, 0
+	.dword		0, 0, 0
 
 	/* Secondary CPU spin address at ZSTAGE_TEXT_START + 4KB */
 	.align 12
@@ -247,6 +258,20 @@ _zstage_boot_status:
 	RISCV_PTR	0
 _zstage_stack_top:
 	RISCV_PTR	_stack_top
+
+#ifdef ZSTAGE_PLATDATA_SIZE
+	.bss
+#ifdef ZSTAGE_PLATDATA_ALIGN
+	.align ZSTAGE_PLATDATA_ALIGN
+#else
+	.align 12
+#endif
+_zstage_platdata:
+	.rept		ZSTAGE_PLATDATA_SIZE
+	.byte		0
+	.endr
+_zstage_platdata_end:
+#endif
 
 	.section .payload, "ax", %progbits
 	.align 4

@@ -42,6 +42,13 @@ ifdef ZSTAGE_NO_SPIN
 firmware-genflags-y += -DZSTAGE_NO_SPIN=1
 endif
 
+ifdef ZSTAGE_PLATDATA_SIZE
+firmware-genflags-y += -DZSTAGE_PLATDATA_SIZE=$(ZSTAGE_PLATDATA_SIZE)
+ifdef ZSTAGE_PLATDATA_ALIGN
+firmware-genflags-y += -DZSTAGE_PLATDATA_ALIGN=$(ZSTAGE_PLATDATA_ALIGN)
+endif
+endif
+
 firmware-objs-y += head.o
 firmware-objs-y += main.o
 firmware-objs-y += string.o

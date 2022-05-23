@@ -36,6 +36,10 @@ _zstage_header_image_size:
 	.dword		(_zstage_end - _zstage_start)
 _zstage_header_image_spin_addr:
 	.dword		_zstage_spin_addr
+_zstage_header_image_nmivect_addr:
+	.dword		_zstage_nmivect
+_zstage_header_image_nmivect_size:
+	.dword		(_zstage_nmivect_end - _zstage_nmivect)
 _zstage_header_next_load_addr:
 	.dword		_zstage_payload_bin
 _zstage_header_next_run_addr:
@@ -45,15 +49,23 @@ _zstage_header_next_fdt_addr:
 _zstage_header_next_size:
 	.dword		(_zstage_payload_bin_end - _zstage_payload_bin)
 _zstage_header_reserved2:
-	.dword		0, 0, 0, 0, 0, 0, 0
+	.dword		0, 0, 0, 0, 0
 
 	/* Secondary CPU spin address at ZSTAGE_TEXT_START + 4KB */
 	.align 12
 _zstage_spin_addr:
 	RISCV_PTR	0
 
-	/* Real start at ZSTAGE_TEXT_START + 4KB + 8 */
-	.align 3
+	/* NMI vector address at ZSTAGE_TEXT_START + (2 * 4KB) */
+	.align 12
+_zstage_nmivect:
+	wfi
+	j	_zstage_nmivect
+	.align 12
+_zstage_nmivect_end:
+
+	/* Real start at ZSTAGE_TEXT_START + (3 * 4KB) */
+	.align 12
 _start_real:
 	/* Disable and clear all interrupts */
 	csrw	CSR_MIE, zero

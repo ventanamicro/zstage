@@ -34,6 +34,8 @@ _zstage_header_image_run_addr:
 	.dword		_zstage_start
 _zstage_header_image_size:
 	.dword		(_zstage_end - _zstage_start)
+_zstage_header_image_spin_addr:
+	.dword		_zstage_spin_addr
 _zstage_header_next_load_addr:
 	.dword		_zstage_payload_bin
 _zstage_header_next_run_addr:
@@ -43,7 +45,7 @@ _zstage_header_next_fdt_addr:
 _zstage_header_next_size:
 	.dword		(_zstage_payload_bin_end - _zstage_payload_bin)
 _zstage_header_reserved2:
-	.dword		0, 0, 0, 0, 0, 0, 0, 0
+	.dword		0, 0, 0, 0, 0, 0, 0
 
 	/* Secondary CPU spin address at ZSTAGE_TEXT_START + 4KB */
 	.align 12

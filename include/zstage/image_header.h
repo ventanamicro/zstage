@@ -24,11 +24,12 @@ struct zstage_image_header {
 	u32	reserved1;
 	u64	image_run_addr;
 	u64	image_size;
+	u64	image_spin_addr;
 	u64	next_load_addr;
 	u64	next_run_addr;
 	u64	next_fdt_addr;
 	u64	next_size;
-	u64	reserved2[8];
+	u64	reserved2[7];
 };
 
 #endif

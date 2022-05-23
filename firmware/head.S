@@ -60,6 +60,8 @@ _zstage_header_next_fdt_addr:
 _zstage_header_next_size:
 	.dword		(_zstage_payload_bin_end - _zstage_payload_bin)
 _zstage_header_reserved2:
+	.dword		0, 0, 0, 0, 0, 0, 0, 0
+	.dword		0, 0, 0, 0, 0, 0, 0, 0
 	.dword		0, 0, 0
 
 	/* Secondary CPU spin address at ZSTAGE_TEXT_START + 4KB */

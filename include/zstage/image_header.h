@@ -33,7 +33,7 @@ struct zstage_image_header {
 	u64	next_run_addr;
 	u64	next_fdt_addr;
 	u64	next_size;
-	u64	reserved2[3];
+	u64	reserved2[19];
 };
 
 #endif

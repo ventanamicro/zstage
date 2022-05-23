@@ -28,8 +28,8 @@ _zstage_header_magic:
 	.word		ZSTAGE_IMAGE_MAGIC
 _zstage_header_version:
 	.word		ZSTAGE_IMAGE_VERSION
-_zstage_header_boot_device:
-	.word		ZSTAGE_IMAGE_BOOTDEV_RAM
+_zstage_header_reserved1:
+	.word		0
 _zstage_header_image_run_addr:
 	.dword		_zstage_start
 _zstage_header_image_size:

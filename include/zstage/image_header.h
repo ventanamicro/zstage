@@ -13,8 +13,6 @@
 	((__major) << 16 | (__minor))
 #define ZSTAGE_IMAGE_VERSION			ZSTAGE_IMAGE_MKVERSION(1, 0)
 
-#define ZSTAGE_IMAGE_BOOTDEV_RAM		0
-
 #ifndef __ASSEMBLER__
 
 #include <zstage/types.h>
@@ -23,7 +21,7 @@ struct zstage_image_header {
 	u32	jump_insn;
 	u32	magic;
 	u32	version;
-	u32	boot_device;
+	u32	reserved1;
 	u64	image_run_addr;
 	u64	image_size;
 	u64	next_load_addr;

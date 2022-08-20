@@ -10,12 +10,14 @@
 #include <zstage/types.h>
 
 struct zstage_image_header;
+struct zstage_payload_blob;
 
 /** Hang loop for failure situation */
 void __noreturn zstage_hang(void);
 
 /** The main function */
 void zstage_main(unsigned long boot_arg1,
-		 const struct zstage_image_header *hdr);
+		 const struct zstage_image_header *hdr,
+		 const struct zstage_payload_blob *blobs);
 
 #endif

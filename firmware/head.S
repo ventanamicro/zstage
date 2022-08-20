@@ -206,6 +206,7 @@ _bss_zero:
 	la	a0, _zstage_boot_arg1
 	REG_L	a0, (a0)
 	la	a1, _start
+	la	a2, _zstage_blob_table
 	call	zstage_main
 
 #ifdef ZSTAGE_NO_SPIN
@@ -270,6 +271,30 @@ _zstage_boot_status:
 _zstage_stack_top:
 	RISCV_PTR	_stack_top
 
+	.data
+	.align 8
+_zstage_blob_table:
+#ifdef ZSTAGE_PAYLOAD_BLOB1_PATH
+	.dword		_zstage_payload_blob1
+	.dword		ZSTAGE_PAYLOAD_BLOB1_ADDR
+	.dword		_zstage_payload_blob1_end - _zstage_payload_blob1
+	.dword		0
+#endif
+#ifdef ZSTAGE_PAYLOAD_BLOB2_PATH
+	.dword		_zstage_payload_blob2
+	.dword		ZSTAGE_PAYLOAD_BLOB2_ADDR
+	.dword		_zstage_payload_blob2_end - _zstage_payload_blob2
+	.dword		0
+#endif
+#ifdef ZSTAGE_PAYLOAD_BLOB3_PATH
+	.dword		_zstage_payload_blob3
+	.dword		ZSTAGE_PAYLOAD_BLOB3_ADDR
+	.dword		_zstage_payload_blob3_end - _zstage_payload_blob3
+	.dword		0
+#endif
+	/* Sentinel entry */
+	.dword		0, 0, 0, 0
+
 #ifdef ZSTAGE_PLATDATA_SIZE
 	.bss
 #ifdef ZSTAGE_PLATDATA_ALIGN
@@ -295,3 +320,27 @@ _zstage_payload_bin:
 	.incbin	ZSTAGE_PAYLOAD_PATH
 #endif
 _zstage_payload_bin_end:
+
+#ifdef ZSTAGE_PAYLOAD_BLOB1_PATH
+	.section .payload, "ax", %progbits
+	.align 4
+_zstage_payload_blob1:
+	.incbin	ZSTAGE_PAYLOAD_BLOB1_PATH
+_zstage_payload_blob1_end:
+#endif
+
+#ifdef ZSTAGE_PAYLOAD_BLOB2_PATH
+	.section .payload, "ax", %progbits
+	.align 4
+_zstage_payload_blob2:
+	.incbin	ZSTAGE_PAYLOAD_BLOB2_PATH
+_zstage_payload_blob2_end:
+#endif
+
+#ifdef ZSTAGE_PAYLOAD_BLOB3_PATH
+	.section .payload, "ax", %progbits
+	.align 4
+_zstage_payload_blob3:
+	.incbin	ZSTAGE_PAYLOAD_BLOB3_PATH
+_zstage_payload_blob3_end:
+#endif

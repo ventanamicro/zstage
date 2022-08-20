@@ -7,6 +7,7 @@
 #include <zstage/console.h>
 #include <zstage/image_header.h>
 #include <zstage/main.h>
+#include <zstage/payload_blob.h>
 #include <zstage/platform.h>
 #include <zstage/riscv_asm.h>
 #include <zstage/string.h>
@@ -21,7 +22,8 @@ void __noreturn zstage_hang(void)
 }
 
 void zstage_main(unsigned long boot_arg1,
-		 const struct zstage_image_header *hdr)
+		 const struct zstage_image_header *hdr,
+		 const struct zstage_payload_blob *blobs)
 {
 	int rc;
 
@@ -58,6 +60,15 @@ void zstage_main(unsigned long boot_arg1,
 		zstage_hang();
 	}
 
+	/* Copy blobs to destination */
+	while (blobs->size) {
+		printf("zstage: copying %s (%lu bytes) to 0x%lx from 0x%lx\n",
+		       "blob", blobs->size, blobs->dst_addr, blobs->src_addr);
+		memcpy((void *)blobs->dst_addr,
+		       (void *)blobs->src_addr, blobs->size);
+		blobs++;
+	}
+
 	/* Prepare platform FDT */
 	printf("zstage: setup platform FDT at 0x%lx\n", hdr->next_fdt_addr);
 	rc = platform_prepare_fdt(boot_arg1, hdr);
@@ -68,8 +79,8 @@ void zstage_main(unsigned long boot_arg1,
 
 	/* Copy next booting stage to run location */
 	if (hdr->next_load_addr != hdr->next_run_addr) {
-		printf("zstage: copying (%lu bytes) to 0x%lx from 0x%lx\n",
-		       hdr->next_size, hdr->next_run_addr,
+		printf("zstage: copying %s (%lu bytes) to 0x%lx from 0x%lx\n",
+		       "next stage", hdr->next_size, hdr->next_run_addr,
 		       hdr->next_load_addr);
 		memcpy((void *)hdr->next_run_addr,
 		       (void *)hdr->next_load_addr, hdr->next_size);

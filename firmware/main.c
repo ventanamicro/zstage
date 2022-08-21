@@ -26,6 +26,7 @@ void zstage_main(unsigned long boot_arg1,
 		 const struct zstage_payload_blob *blobs)
 {
 	int rc;
+	const struct zstage_console_device *cdev;
 
 	/* Check header magic and version */
 	if (hdr->magic != ZSTAGE_IMAGE_MAGIC ||
@@ -59,6 +60,10 @@ void zstage_main(unsigned long boot_arg1,
 		printf("zstage: platform early init failed (error %d)\n", rc);
 		zstage_hang();
 	}
+
+	/* Print console device name */
+	cdev = zstage_console_get_device();
+	printf("zstage: console device %s\n", (cdev) ? cdev->name : "---");
 
 	/* Copy blobs to destination */
 	while (blobs->size) {

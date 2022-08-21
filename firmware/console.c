@@ -363,6 +363,11 @@ void __noreturn panic(const char *format, ...)
 	zstage_hang();
 }
 
+const struct zstage_console_device *zstage_console_get_device(void)
+{
+	return console_dev;
+}
+
 void zstage_console_set_device(const struct zstage_console_device *dev)
 {
 	if (!dev || console_dev)

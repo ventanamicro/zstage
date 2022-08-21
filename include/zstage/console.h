@@ -34,6 +34,8 @@ int __printf(1, 2) printf(const char *format, ...);
 
 void __printf(1, 2) __noreturn panic(const char *format, ...);
 
+const struct zstage_console_device *zstage_console_get_device(void);
+
 void zstage_console_set_device(const struct zstage_console_device *dev);
 
 int zstage_console_init(unsigned long boot_arg1);

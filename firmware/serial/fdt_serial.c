@@ -12,10 +12,12 @@
 
 extern struct fdt_serial fdt_serial_uart8250;
 extern struct fdt_serial fdt_serial_htif;
+extern struct fdt_serial fdt_serial_semihosting;
 
 static struct fdt_serial *serial_drivers[] = {
 	&fdt_serial_uart8250,
-	&fdt_serial_htif
+	&fdt_serial_htif,
+	&fdt_serial_semihosting
 };
 
 static struct fdt_serial dummy = {

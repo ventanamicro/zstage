@@ -8,6 +8,7 @@
 #include <zstage/error.h>
 #include <zstage/image_header.h>
 #include <zstage/serial/fdt_serial.h>
+#include <zstage/serial/semihosting.h>
 #include <zstage/platform.h>
 #include <zstage/string.h>
 
@@ -19,6 +20,13 @@ int platform_early_init(unsigned long boot_arg1)
 
 int platform_stdio_init(unsigned long boot_arg1)
 {
+	/*
+	 * First try semihosting. If it works then
+	 * don't try FDT based serial drivers
+	 */
+	if (!semihosting_serial_init())
+		return 0;
+
 	/* Probe FDT based serial drivers. */
 	return fdt_serial_init((void *)boot_arg1);
 }

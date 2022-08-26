@@ -7,7 +7,6 @@
 firmware-objs-y += serial/fdt_serial.o
 firmware-objs-y += serial/fdt_serial_uart8250.o
 firmware-objs-y += serial/fdt_serial_htif.o
-firmware-objs-y += serial/fdt_serial_semihosting.o
 firmware-objs-y += serial/htif.o
 firmware-objs-y += serial/semihosting.o
 firmware-objs-y += serial/uart8250.o

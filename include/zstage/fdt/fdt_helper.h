@@ -37,4 +37,15 @@ int fdt_get_node_addr_size(void *fdt, int node, int index,
 int fdt_parse_compat_addr(void *fdt, uint64_t *addr,
 			  const char *compatible);
 
+struct platform_uart_data {
+	unsigned long addr;
+	unsigned long freq;
+	unsigned long baud;
+	unsigned long reg_shift;
+	unsigned long reg_io_width;
+};
+
+int fdt_parse_uart_node(void *fdt, int nodeoffset,
+			struct platform_uart_data *uart);
+
 #endif

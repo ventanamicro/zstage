@@ -10,10 +10,12 @@
 #include <zstage/fdt/fdt_helper.h>
 #include <zstage/serial/fdt_serial.h>
 
+extern struct fdt_serial fdt_serial_cadence;
 extern struct fdt_serial fdt_serial_uart8250;
 extern struct fdt_serial fdt_serial_htif;
 
 static struct fdt_serial *serial_drivers[] = {
+	&fdt_serial_cadence,
 	&fdt_serial_uart8250,
 	&fdt_serial_htif,
 };

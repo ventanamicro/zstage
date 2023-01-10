@@ -218,6 +218,9 @@ _bss_zero:
 	fence	rw, rw
 #endif
 
+#ifdef ZSTAGE_PAYLOAD_BLOB1_PATH
+	la      a2, _fw_dynamic_info
+#endif
 	/* Jump to next booting stage */
 	csrr	a0, CSR_MHARTID
 	la	t0, _zstage_header_next_fdt_addr
@@ -270,6 +273,24 @@ _zstage_boot_status:
 	RISCV_PTR	0
 _zstage_stack_top:
 	RISCV_PTR	_stack_top
+
+#ifdef ZSTAGE_PAYLOAD_BLOB1_PATH
+	.data
+	.align 8
+_fw_dynamic_info:
+	/* magic */
+	.dword          0x4942534f
+	/* version */
+	.dword          0x2
+	/* next_addr */
+	.dword          ZSTAGE_PAYLOAD_BLOB1_ADDR
+	/* next_mode */
+	.dword          0x1
+	/* options */
+	.dword          0x0
+	/* boot_hart */
+	.dword          0x0
+#endif
 
 	.data
 	.align 8

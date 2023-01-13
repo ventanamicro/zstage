@@ -8,6 +8,7 @@
 #include <zstage/console.h>
 #include <zstage/main.h>
 #include <zstage/platform.h>
+#include <zstage/string.h>
 
 static const struct zstage_console_device *console_dev = NULL;
 
@@ -29,18 +30,28 @@ void putc(char ch)
 	}
 }
 
+void nputs(const char *str, unsigned long len)
+{
+	unsigned long i;
+
+	if (console_dev && console_dev->console_puts) {
+		console_dev->console_puts(str, len);
+	} else {
+		for (i = 0; i < len; i++)
+			putc(str[i]);
+	}
+}
+
 void puts(const char *str)
 {
-	while (*str) {
-		putc(*str);
-		str++;
-	}
+	nputs(str, strlen(str));
 }
 
 #define PAD_RIGHT 1
 #define PAD_ZERO 2
 #define PAD_ALTERNATE 4
 #define PRINT_BUF_LEN 64
+#define PRINT_TBUF_MAX 128
 
 #define va_start(v, l) __builtin_va_start((v), l)
 #define va_end __builtin_va_end
@@ -49,20 +60,22 @@ typedef __builtin_va_list va_list;
 
 static void printc(char **out, u32 *out_len, char ch)
 {
-	if (out) {
-		if (*out) {
-			if (out_len && (0 < *out_len)) {
-				**out = ch;
-				++(*out);
-				(*out_len)--;
-			} else {
-				**out = ch;
-				++(*out);
-			}
-		}
-	} else {
+	if (!out) {
 		putc(ch);
+		return;
 	}
+
+	/*
+	 * The *printf entry point functions have enforced that (*out) can
+	 * only be null when out_len is non-null and its value is zero.
+	 */
+	if (!out_len || *out_len > 1) {
+		*(*out)++ = ch;
+		**out = '\0';
+	}
+
+	if (out_len && *out_len > 0)
+		--(*out_len);
 }
 
 static int prints(char **out, u32 *out_len, const char *string, int width,
@@ -154,12 +167,26 @@ static int printi(char **out, u32 *out_len, long long i, int b, int sg,
 
 static int print(char **out, u32 *out_len, const char *format, va_list args)
 {
-	int width, flags, acnt = 0;
-	int pc = 0;
-	char scr[2];
+	u32 tbuf_len;
+	int width, flags, acnt = 0, pc = 0;
+	char scr[2], *tout, tbuf[PRINT_TBUF_MAX];
+	bool use_tbuf = (!out) ? true : false;
 	unsigned long long tmp;
 
+	if (use_tbuf) {
+		tbuf_len = PRINT_TBUF_MAX;
+		tout = tbuf;
+		out = &tout;
+		out_len = &tbuf_len;
+	}
+
 	for (; *format != 0; ++format) {
+		if (use_tbuf && !tbuf_len) {
+			nputs(tbuf, PRINT_TBUF_MAX);
+			tbuf_len = PRINT_TBUF_MAX;
+			tout = tbuf;
+		}
+
 		if (*format == '%') {
 			++format;
 			width = flags = 0;
@@ -310,8 +337,9 @@ static int print(char **out, u32 *out_len, const char *format, va_list args)
 			++pc;
 		}
 	}
-	if (out)
-		**out = '\0';
+
+	if (use_tbuf && tbuf_len < PRINT_TBUF_MAX)
+		nputs(tbuf, PRINT_TBUF_MAX - tbuf_len);
 
 	return pc;
 }

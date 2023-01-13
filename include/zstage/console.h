@@ -16,6 +16,9 @@ struct zstage_console_device {
 
 	/** Write a character to the console output */
 	void (*console_putc)(char ch);
+
+	/** Write a character string to the console output */
+	void (*console_puts)(const char *str, unsigned long len);
 };
 
 #define __printf(a, b) __attribute__((format(printf, a, b)))
